@@ -108,9 +108,32 @@ new Promise((resolve) => {
 
 ​	我们来看下Promise的一些结构规律：
 
-​							
+1. Promise是一个类
+
+```bash
+	class Promise {
+	}
+```
+
+2. 构造函数第一个参数为一个函数，该函数暴露的2个函数作为参数，第一个为参数为成功的时候调用,第二个为失败的时候调用
+
+```
+   	class Promise {
+   		constructor(fn) {
+   			const resolve = () => {
+   				console.log('sucess!')
+   			}
+   			const reject = () => {
+   				console.log('reject!!!')
+   			}
+   			fn(resolve, reject)
+   		}
+   	}
+```						
 
 ### 实现then异步调用 -- 发布订阅
+
+
 
 ### 实现then的同步调用 -- 之漏洞一
 
