@@ -104,13 +104,27 @@ new Promise((resolve) => {
 .then(ret => console.log(ret))
 ```
 
-### 实现基本结构
 
-​	我们来看下Promise的一些结构规律：
 
-​							
+### 基本特性
 
-### 实现then异步调用 -- 发布订阅
+我们来看下Promise的一些基本结构：
+
+1. promise是一个类。
+2. 构造函数的参数是一个函数fn，fn 的参数有2个参数，一个参数是成功时候的调用，一个是失败时候调用
+3. promise对象有一个then方法，一个是成功的回调，一个是失败的回调
+4. then方法支持链式调用
+5. then返回了一个新的promise对象
+6. promise对象有一个 catch方法，捕捉reject的抛出的错误
+7. Promise静态方法all, race;			
+
+
+
+
+
+### 实现基本结构和then异步调用 -- 发布订阅
+
+​	
 
 ### 实现then的同步调用 -- 之漏洞一
 
