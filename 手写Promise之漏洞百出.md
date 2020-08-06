@@ -1,5 +1,3 @@
-## 								手写Promise之漏洞百出	
-
 ### 前言
 
 ​	相信来看手写Promise的小可爱们，都或多或少知道Promise的使用方法和作用。所以这里就不详细介绍Promise的历史背景和作用，简单介绍一下，各种使用方法，和自己手写Promise的过程，作为一个学习记录。
@@ -104,18 +102,26 @@ new Promise((resolve) => {
 .then(ret => console.log(ret))
 ```
 
-### 实现基本结构
+总结下Promise的一些基本结构：
 
-​	我们来看下Promise的一些结构规律：
+1. promise是一个类。
+2. 构造函数的参数是一个函数fn，fn 的参数有2个参数，一个参数是成功时候的调用，一个是失败时候调用
+3. promise对象有一个then方法，一个是成功的回调，一个是失败的回调
+4. then方法支持链式调用
+5. then返回了一个新的promise对象
+6. promise对象有一个 catch方法，捕捉reject的抛出的错误
+7. Promise静态方法all, race;
+8. Promise 状态只能从pending到 reslove 或者reject 的状态
 
-1. Promise是一个类
+
+ Promise是一个类
 
 ```bash
 	class Promise {
 	}
 ```
 
-2. 构造函数第一个参数为一个函数，该函数暴露的2个函数作为参数，第一个为参数为成功的时候调用,第二个为失败的时候调用
+构造函数第一个参数为一个函数，该函数暴露的2个函数作为参数，第一个为参数为成功的时候调用,第二个为失败的时候调用
 
 ```
    	class Promise {
@@ -129,13 +135,74 @@ new Promise((resolve) => {
    			fn(resolve, reject)
    		}
    	}
-```						
+```
 
-### 实现then异步调用 -- 发布订阅
 
+
+### 实现基本结构和then异步调用 -- 发布订阅
+
+​	结合上面特点，我们实现一个简单的Promise
+```
+
+class _Promise {
+
+    constructor(executor) {
+        this.status = 'pending' // resolved rejected
+        this.value = null // 当前值
+        this.reason = null // 当前拒绝原因
+
+        this.onResolveCallbacks = [] // 事件发布订阅容器
+        this.onRejectedCallbacks = [] // 拒绝容器
+
+        const resolve = function(value) { // reslove调用的函数
+            this.status = 'resolved'
+            this.value = value
+            if(this.onResolveCallbacks.length === 0) return
+            this.onResolveCallbacks.forEach(fn => fn(this.value))
+        }
+
+        const reject = function(reject) { // reject调用的函数
+            this.status = 'rejected'
+            this.reason = reject
+            if(this.onRejectedCallbacks.length === 0) {
+                console.warn('UnhandledPromiseRejectionWarning:', this.reject)
+                console.warn('UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch().') 
+                return
+            }
+            this.onRejectedCallbacks.forEach(fn => fn(this.reason))
+        }
+
+        executor(resolve, reject) // 执行传进来的函数
+    }
+
+    then(onFulfilled, onRejected) { // 实现内部then方法
+        if(this.status === 'pending') { // 把方法推入容器，等待调用，下面同理
+            this.onResolveCallbacks.push(onFulfilled)
+            this.onRejectedCallbacks.push(onRejected)
+        }
+        if(this.status === 'resolved') {
+            onFulfilled(this.value)
+        }
+        if(this.status === 'rejected') {
+            onRejected(this.reason)
+        }
+    }
+    catch(onRejected) {
+        if(this.status === 'pending') {
+            this.onRejectedCallbacks.push(onRejected)
+        }
+        if(this.status === 'rejected' || this.status === 'resolved') {
+            onRejected(this.reason)
+        }
+    }
+}
+
+```
+上面的实现了基本的方法，但是还存在许多问题，比如还没有链式调用等等...
 
 
 ### 实现then的同步调用 -- 之漏洞一
+	
 
 ### 实现then的链式调用
 
@@ -148,162 +215,4 @@ new Promise((resolve) => {
 ### 实现静态方法 all
 
 ### 实现静态方法 race
-
-
-
-假设你已经有了webpack源码，找到webpack项目下的package.json文件。
-
-发现:
-
-```javascript
-  // package.json
-  "main": "./lib/webpack.js",
-  
-  // ./lib/webpack.js
-  exports = module.exports = webpack;
-```
-
-所以, let webpack = require('webpack')，其实就是这个函数
-
-```javascript
-const webpack = (options, callback) => {
-	
-	// 代码块1：
-	const webpackOptionsValidationErrors = validateSchema(
-		webpackOptionsSchema,
-		options
-	);
-	if (webpackOptionsValidationErrors.length) {
-		throw new WebpackOptionsValidationError(webpackOptionsValidationErrors);
-	}
-	// 代码块1 end---------------
-	
-	let compiler;
-	if (typeof options === "object") {
-		options = new WebpackOptionsDefaulter().process(options);
-
-		compiler = new Compiler(options.context);
-		compiler.options = options;
-		
-		new NodeEnvironmentPlugin({
-			infrastructureLogging: options.infrastructureLogging
-		}).apply(compiler);
-		
-		// 代码块2
-		if (options.plugins && Array.isArray(options.plugins)) {
-			for (const plugin of options.plugins) {
-				if (typeof plugin === "function") {
-					plugin.call(compiler, compiler);
-				} else {
-					plugin.apply(compiler);
-				}
-			}
-		}
-		// 2 end---------
-		
-		compiler.hooks.environment.call();
-		compiler.hooks.afterEnvironment.call();
-		compiler.options = new WebpackOptionsApply().process(options, compiler);
-	} else {
-		throw new Error("Invalid argument: options");
-	}
-	return compiler;
-};
-```
-
-- 其中，一个好的系统都会做参数校验，代码块1，就是对传进来的options做判断。
-
-- options = new WebpackOptionsDefaulter().process(options); webpack4能做到0配置是因为它。
-
-  这一句，设置了webpack的许多默认属性，具体在WebpackOptionsDefaulter.js文件中，并且继承了OptionsDefaulter类。
-
-  看完就明白了 entry为什么默认是 ./src下，cache只有在development下打开，optimization下splitChunks的默认分割文件规则等等。
-
-  以后要是不明白webpack4的默认行为，常来这里看看。
-
-- compiler = new Compiler(options.context);  然后实例化了一个Complier(继承了Tapable)实例，为编译做准备。其中在complier对象上定义了hook属性，里面包含了各种钩子。
-
-  ```
-  this.hooks = {
-  			done: new AsyncSeriesHook(["stats"]),
-  			beforeRun: new AsyncSeriesHook(["compiler"]),
-  			run: new AsyncSeriesHook(["compiler"]),
-  			emit: new AsyncSeriesHook(["compilation"]),
-  			assetEmitted: new AsyncSeriesHook(["file", "content"]),
-  			afterEmit: new AsyncSeriesHook(["compilation"]),
-  
-  			compilation: new SyncHook(["compilation", "params"]),
-  			normalModuleFactory: new SyncHook(["normalModuleFactory"]),
-  			contextModuleFactory: new SyncHook(["contextModulefactory"]),
-  			beforeCompile: new AsyncSeriesHook(["params"]),
-  			compile: new SyncHook(["params"]),
-  			make: new AsyncParallelHook(["compilation"]),
-  			afterCompile: new AsyncSeriesHook(["compilation"]),
-  			
-  			// TODO the following hooks are weirdly located here
-  			// TODO move them for webpack 5
-  			environment: new SyncHook([]),
-  			afterEnvironment: new SyncHook([]),
-  			afterPlugins: new SyncHook(["compiler"]),
-  			afterResolvers: new SyncHook(["compiler"]),
-  			entryOption: new SyncBailHook(["context", "entry"])
-  		};
-  ```
-
-   所以如果写插件，想在哪个阶段做事情，就和这个有关了。
-
-- compiler.options = options; 并把默认的参数挂载到了complier实例。
-
-- NodeEnvironmentPlugin插件, 在文件中 NodeEnvironmentPlugin.js提供了node.js 的fs 操作文件的能力，同时注册了beforeRun钩子的监听函数，功能是在运行前清理文件缓存。
-
-- 代码块2的功能是，调用在webpack.config.js 配置文件中传入的各个插件实例的apply 方法，并把编译实例complier作为参数传进去了。所以暴露了webpack合并的默认参数和各阶段的钩子函数，供君使用。到这里，最简单的插件产生了。
-
-  ```javascript
-  
-  class HookTest {
-      constructor() {
-          console.log('HookTest被实例化.....');
-      }
-      apply(compiler) {
-          console.log('apply方法被调用');
-          //compiler.hooks.run.tap('testHook', (compiler, err) => {
-          //    console.log('beforeRun 执行完了，到run了', compiler, err);
-          //});
-      }
-  }
-  
-  module.exports = HookTest;
-  ```
-
-  
-
-- compiler.hooks.environment.call();/compiler.hooks.afterEnvironment.call(); 触发这2个钩子函数
-
-- compiler.options = new WebpackOptionsApply().process(options, compiler); 这句就吊了。你们知道得webpack 一切皆插件。但是！我们的配置怎么转化为具体功能的呢？就是这句代码的作用，它把所有的配置转化成对应的插件并apply，即在对应阶段tap/tapAsync(监听)了事件，供之后call/callAsync/promise(调用)。意思是你的配置都转化成了功能，调用不调用它都在那里等你call。
-
-  
-
-  到这初始化结束，总结下初始化做了哪些事情。
-
-  1. 初始化了配置参数options
-  2. 初始化了编译Complier 实例对象complier，并定义了各种阶段钩子。并将options挂载在了complier上
-  3. complier上增加了文件操作能力
-  4. 注册webpack.config.js 中传入的plugins
-  5. 配置参数转化为插件，注册相应功能
-
-### 编译
-
-​		我们从上面知道，编译是从complier.run()开始，但是，真正编译的工作是在 Compilation类里面完成的, Complier却是作为一个主流程触发一系列钩子。看下我总结的一个流程：
-
-从图中可以看到具体流程。
-
-- addEntry 表示添加入口文件
-- _addModuleChain 添加模块链
-- runLoaders 获取对应的loader解析文件
-- Seal 触发各种钩子，Chunk的优化打包构建
-- onCompiled 完成了最后输出文件到磁盘的操作
-
-编译模块的主要过程，参考这篇[文章](https://juejin.im/post/5d418879f265da03af19b03f#heading-10) 说得很详细了没错就是抄来抄去得。你懂就好了。
-
-所以loader 的解析我们就知道了是在runLoaders这个阶段。
 
