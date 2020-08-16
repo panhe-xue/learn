@@ -21,6 +21,15 @@
 
 ​	根据查找文件规则，当我们 import { BrowserRouter } from 'react-router-dom' 的时候，我们会找到  '...\react-router-master\react-router-master\packages\react-router-dom\modules\BrowserRouter.js' 文件。
 
+```jsx
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Link
+} 
+```
+
 ```react
 import React from "react";
 import { Router } from "react-router";
