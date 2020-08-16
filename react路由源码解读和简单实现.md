@@ -8,7 +8,6 @@
 2. 在Route 渲染组件的时候，需要渲染的组件已子组件的形式传入Route组件将在内部拿不到history，location 等对象，以compent,render 方式传入将会拿到这些对象，这是为什么？
 3. BrowserRouter 和 HashRouter 与服务器怎么交流的？
 4. react-router是如何做到不同的地址，匹配不同组件？
-5. react-router 组件库是怎么做到按需加载的？
 
 ​		ok，在这以前，你需要先在github 上 clone 一份react-router代码，目前最新版本是 5.2.0。
 
@@ -65,11 +64,11 @@ export default BrowserRouter;
 
 ```
 
-这里我们知道，BrowserRouter 是一个高阶组件，本质是返回 react-router 的 Route 组件。并且通过history 库创建一个history 实例 和子组件内容一并传入了 Router 组件中。其实整个React Router 的 history实例都是来自这里。
+这里我们知道，BrowserRouter 是一个高阶组件，本质是返回 react-router 的 Router 组件。并且通过history 库创建一个history 实例 和子组件内容一并传入了 Router 组件中。整个React Router 的 history实例都是来自这里。
 
-​	所以我们我们其实需要关注的 react-router库的Router 组件以及history 库的  createBrowserHistory 方法。
+​	所以我们我们其实需要关注的是 react-router库的Router 组件以及history 库的  createBrowserHistory 方法。
 
-​	经过我们思考，Router组件其实本质是根据 浏览器的 url 实现逻辑操作，但是最终还是去调用 history 库提供的一些方法。所以弄清楚history 对象才是本质。
+​	经过我们思考，Router组件本质大概是根据 浏览器的 url 实现逻辑操作，但是最终还是去调用 history 库提供的一些方法。所以弄清楚history 对象才是本质。
 ​	那我们先从history 开始。
 
 ### history API
@@ -103,7 +102,9 @@ export function createBrowserHistory(
   function getHistoryStateAndUrl(
   }
   function allowTx(action: Action, location: Location, retry: () => void) { }
+  
   function applyTx(nextAction: Action) { }
+    
   function push(to: To, state?: State) {
     let nextAction = Action.Push;
     let nextLocation = getNextLocation(to, state);
@@ -113,7 +114,7 @@ export function createBrowserHistory(
     if (allowTx(nextAction, nextLocation, retry)) {
       let [historyState, url] = getHistoryStateAndUrl(nextLocation, index + 1);
       try {
-        globalHistory.pushState(historyState, '', url);
+        globalHistory.pushState(historyState, '', url); // 这里调用 pushState
       } catch (error) {
         window.location.assign(url);
       }
@@ -316,29 +317,66 @@ export default Route;
 
 ```
 
+这里我们可以回答第2个问题和第4个问题了：
+
+​	2，在Route 渲染组件的时候，需要渲染的组件已子组件的形式传入Route组件将在内部拿不到history，location 等对象，以compent,render 方式传入将会拿到这些对象，这是为什么？
+
+​	从Route组件大致可以看出，当传入children 对象为组件的时候，会直接渲染该组件，其他情况则传入了props 对象。
+
+​	4，react-router是如何做到不同的地址，匹配不同组件？
+
+​	一切是 matchPath 函数得出结论
 
 
-####  Redirect
-
-####  StaticRouter
 
 ####  Switch
 
-####  matchPath
+```react
+import React from "react";
+import PropTypes from "prop-types";
+import invariant from "tiny-invariant";
+import warning from "tiny-warning";
 
-####  useHistory
+import RouterContext from "./RouterContext.js";
+import matchPath from "./matchPath.js";
 
-####  useLocation
+class Switch extends React.Component {
+  render() {
+    return (
+      <RouterContext.Consumer>
+        {context => {
+          invariant(context, "You should not use <Switch> outside a <Router>");
 
-####  useParams
+          const location = this.props.location || context.location;
 
-####  useRouteMatch
+          let element, match;
 
-### react-router-dom API
+          React.Children.forEach(this.props.children, child => {
+            if (match == null && React.isValidElement(child)) {
+              element = child;
 
-#### BrowserRouter
+              const path = child.props.path || child.props.from;
 
-#### HashRouter
+              match = path
+                ? matchPath(location.pathname, { ...child.props, path })
+                : context.match;
+            }
+          });
 
-#### Link
+          return match
+            ? React.cloneElement(element, { location, computedMatch: match })
+            : null;
+        }}
+      </RouterContext.Consumer>
+    );
+  }
+}
 
+export default Switch;
+```
+
+对于第一个问题：在上篇中，测试证明了Route组件也可以不放在Switch组件中，那么Switch组件的真正作用是什么？
+	：Switch 和 Route 组件都是由 RouterContext.Consumer 包裹，可以单独渲染其中任何一个组件。故 Route 组件可以放在Switch里面，也可以单独使用。Switch 组件还是用matchPath 函数进行判断，如果匹配到了子组件的就用 React.cloneElement(element, {}) 渲染对应的组件，如果没有匹配则是null。
+	Switch 组件中的 if (match == null && React.isValidElement(child)) {} 说明为什么 只会渲染第一个匹配到的组件了。
+
+注意： 本文默认你已经知道 matchPath 函数的逻辑。
