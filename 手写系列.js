@@ -179,7 +179,7 @@ class EventEmitter {
     off(type, cb) {
         this.events[type] = this.events[type].filter(listener => listener !== cb)
     }
-    emit(type, ..args) {
+    emit(type, ...args) {
         if(this.events[type]) {
             this.events[type].map(listener => listener.call(this, ...args))
         }
