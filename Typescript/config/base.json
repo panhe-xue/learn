@@ -4,6 +4,7 @@
       "sourceMap": true,
       "module": "commonjs",
       "target": "es5",
+      "lib": ["ES2015", "DOM"],
       "jsx": "react",
       "allowJs": true,
       "allowUnreachableCode": false,

@@ -1,6 +1,6 @@
 // 完整的函数类型
 let myAdd: (x: number, y:number) => number = function(x: number, y: number): number { return x + y }
-
+let f: () => string = () => 'a0'
 // 可选参数
 function buildName(firstName: string, lastName?: string): string {
     if(firstName) return firstName 
