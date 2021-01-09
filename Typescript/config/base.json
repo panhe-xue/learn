@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+      "outDir": "../lib",
+      "sourceMap": true,
+      "module": "commonjs",
+      "target": "es5",
+      "lib": ["ES2015", "DOM"],
+      "jsx": "react",
+      "allowJs": true,
+      "allowUnreachableCode": false,
+      "allowUnusedLabels": false,
+      "noImplicitAny": true,
+      "strictNullChecks": true,
+      "alwaysStrict": false
+    }
+  }
