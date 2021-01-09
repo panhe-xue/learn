@@ -4,7 +4,7 @@
 // 冒泡排序 (较大的一个一个冒泡到后面)
 function bubleSort(arr) {
   for( let outer = arr.length; outer >= 2; outer-- ) {
-    for(let inner = 0; inner < outer -1 ; inner++) {
+    for(let inner = 0; inner <= outer -1 ; inner++) {
       if(arr[inner] > arr[inner+1]) {
         [arr[inner], arr[inner + 1]] = [arr[inner + 1], arr[inner]]
       }
@@ -13,21 +13,7 @@ function bubleSort(arr) {
   return arr
 }
 
-// 选择排序 (较小的一个一个比较到前面)
-function selectSort(arr) {
-  
-  for (let outer = 0; outer < arr.length - 1; outer++ ) {
-    for (let inner = outer + 1; inner < arr.length; inner++ ) {
-      if(arr[outer] > arr[inner]) {
-        [ arr[outer], arr[inner] ] = [ arr[inner], arr[outer] ]
-      }
-    }
-  }
-  
-  return arr
-}
-
-// 插入排序 (以第一个为基准 遍历后面，并与前面比较，小则插入到前面)
+// 插入排序 (往前，插入比比自己小的。前面都是有序)
 function insertSort(arr) {
 
   for(let i = 1; i < arr.length; i++  ) {
@@ -39,6 +25,20 @@ function insertSort(arr) {
       }
     }
   }
+  return arr
+}
+
+// 选择排序 (往后，选择一个比自己小的交换，当前最小换出来)
+function selectSort(arr) {
+  
+  for (let outer = 0; outer < arr.length - 1; outer++ ) {
+    for (let inner = outer + 1; inner < arr.length; inner++ ) {
+      if(arr[outer] > arr[inner]) {
+        [ arr[outer], arr[inner] ] = [ arr[inner], arr[outer] ]
+      }
+    }
+  }
+  
   return arr
 }
 
@@ -61,9 +61,29 @@ function quickSort(array) {
   return quickSort(left).concat(target, quickSort(right))
 }
 
-//
+/** -------------------------------------------------------------------- 广度优先搜索 / 深度优先搜索 ------------------------------------------------------------------- */
 
+function bfs(root) {
+  let result = []       
+  let stack = []
+  if(!root) return
+  stack.push(root)
+  while(stack.length > 0) {
+    let tmp = stack.shift()
+    if(tmp === null) { break; }
+    if(tmp.left) {
+      stack.push(tmp.left)
+    }
+    if(tmp.right) {
+      stack.push(tmp.right)
+    }
+    result.push(tmp.val)
+  }      
+}
 
+function dfs(root) {
+  
+}
 
 
 

@@ -137,7 +137,7 @@ function getData(data) {
 }
 
 // instanceof
-function instanceof(A, B) {
+function _instanceof(A, B) {
     B = B.prototype
     A = A.__proto__
     while(true) {
@@ -170,11 +170,11 @@ class EventEmitter {
         this.events = Object.create(null)
     }
     on(type, cb) {
-        if(this.events[type]) {
-            this.events[type].push()
-        } else {
-            this.events[type] = [cb]
-        }
+      if(this.events[type]) {
+          this.events[type].push()
+      } else {
+          this.events[type] = [cb]
+      }
     }
     off(type, cb) {
         this.events[type] = this.events[type].filter(listener => listener !== cb)
@@ -236,10 +236,56 @@ console.log(b)
 
 const flatten = function(arr) {
     return arr.reduce((res, cur) => {
-        if(Array.isArray(cur)) {
-            return [...res, ...flatten(cur)]
-        } else {
-            return [...res, ...cur]
-        }
+      if(Array.isArray(cur)) {
+          return [...res, ...flatten(cur)]
+      } else {
+          return [...res, ...cur]
+      }
     }, [])
 }
+
+// 手写ajax
+function ajax(url, data) {
+  var request = new XMLHttpRequest()
+  request.open('GET', url, true)
+  request.onreadystatechange = function() {
+    if(request.readyState === 4 && request.statue === 200) {
+      console.log(request.responseText)
+    }
+  }
+  request.send()
+}
+
+let dragging = false
+let position = []
+// 写个拖拽
+document.addEventListener('mousedown', function(e) {
+  dragging = false
+  position = [ e.clientX, e.clinetY ]
+})
+
+document.addEventListener('mousemove', function() {
+  
+  if(dragging) return null
+  const left = el.style.left
+  const top = el.style.top
+  const x = e.clientX
+  const y = e.clientY
+  const distanceX = x - position[0]
+  const distanceY = y - position[1]
+  el.style.left = left + distanceX
+  el.style.top = top + distanceY
+
+  position = [x, y]
+})
+
+document.addEventListener('mouseup', function(e) {
+  dragging = false
+})
+
+// 正则去掉空格
+String.prototype.trim = function() {
+  return this.replace(/^\s|\s$/g, '')
+}
+
+// 
